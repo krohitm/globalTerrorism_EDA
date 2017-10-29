@@ -1,6 +1,5 @@
 ---
 title: "Global Terrorism"
-#output: rmarkdown::github_document
 output:
   html_document:
     code_folding: hide
@@ -18,7 +17,8 @@ output:
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo=TRUE, 
                       error=FALSE,
-                      fig.path = "README_figs/README-")
+                      fig.path = "README_figs/README-",
+                      warning = FALSE)
 ```
 
 ```{r}
@@ -44,11 +44,6 @@ library(rgeos)
 ```{r}
 terr = read.csv('~/Downloads/globalterrorismdb_0617dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
 ```
-
-```{r}
-summary(terr)
-```
-
 
 ```{r}
 c(ncol(terr),nrow(terr))
