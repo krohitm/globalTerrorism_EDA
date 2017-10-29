@@ -42,7 +42,7 @@ library(rgeos)
 
 
 ```{r}
-terr = read.csv('~/Downloads/globalterrorismdb_0617dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
+terr = read.csv('~/Documents/CodeWork/Global_Terrorism/globalterrorismdb_0616dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
 ```
 
 ```{r}
@@ -71,6 +71,25 @@ terr$nation[terr$nation=="United Kingdom"] <- "UK"
 terr$nation[terr$nation=="People's Republic of the Congo"] <- "Republic of Congo"
 terr$nation[terr$nation=="Bosnia-Herzegovina"] <- "Bosnia and Herzegovina"
 terr$nation[terr$nation=="Slovak Republic"] <- "Slovakia"
+```
+
+```{r}
+global_t <- 
+  terr %>%
+  group_by(year,nation,Region) %>%
+  summarize(Total=n())
+
+global_y <- global_t%>%group_by(year)%>%summarize(Total=sum(Total))
+
+global_attacks <- 
+  global_t %>%
+  group_by(nation) %>%
+  summarize(Total=sum(Total)) %>% 
+  arrange(desc(Total))
+
+attach(global_attacks)
+global_n <- global_attacks[order(-Total),]
+detach(global_attacks)
 ```
 
 

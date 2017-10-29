@@ -37,7 +37,33 @@ library(reshape2)
 library(raster)
 library(rgdal)
 library(rgeos)
+```
+```{r}
+terr = read.csv('~/Documents/CodeWork/Global_Terrorism/globalterrorismdb_0616dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
+```
 
+```{r}
+terr=rename(terr, id=eventid, year=iyear, nation=country_txt, 
+            Region=region_txt, attack=attacktype1_txt,
+            target=targtype1_txt, weapon=weaptype1_txt, 
+            Killed=nkill, wounded=nwound)
+```
+
+## Data cleaning
+We clean the data
+```{r}
+terr$Killed=as.integer(terr$Killed)
+terr$wounded=as.integer(terr$wounded)
+
+terr$Killed[which(is.na(terr$Killed))] = 0
+terr$wounded[which(is.na(terr$wounded))] = 0
+
+
+terr$nation[terr$nation=="United States"] <- "USA"
+terr$nation[terr$nation=="United Kingdom"] <- "UK"
+terr$nation[terr$nation=="People's Republic of the Congo"] <- "Republic of Congo"
+terr$nation[terr$nation=="Bosnia-Herzegovina"] <- "Bosnia and Herzegovina"
+terr$nation[terr$nation=="Slovak Republic"] <- "Slovakia"
 ```
 
 ```{r}
@@ -47,17 +73,6 @@ global_t <-
   summarize(Total=n())
 
 global_y <- global_t%>%group_by(year)%>%summarize(Total=sum(Total))
-global_attacks <- 
-  global_t %>%
-  group_by(nation) %>%
-  summarize(Total=sum(Total)) %>% 
-  arrange(desc(Total))
-#%>%filter(Total>300)
-#global_attacks$Total[which(is.na(global_attacks$Total))] = 0
-
-attach(global_attacks)
-global_n <- global_attacks[order(-Total),]
-detach(global_attacks)
 ```
 
 
@@ -132,3 +147,16 @@ g2 <- global_n%>%
   labs(x="Countries", y="Number of attacks", title="Countries with least number of terrorist attacks")
 ggplotly(g2, width = 800, height=450)
 ```
+
+```{r}
+g1 <- terr %>% 
+  ggplot(aes(x = weapon, y = wounded, fill=weapon)) + 
+  geom_boxplot() +
+  theme(legend.position = "none",    axis.text.x =  element_text(angle=45))
+ggplotly(g1, height = 500)
+```
+
+```{r}
+
+```
+
