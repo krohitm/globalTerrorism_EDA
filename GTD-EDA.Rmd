@@ -345,16 +345,17 @@ world_groups_attacks$gname[which(is.na(world_groups_attacks$gname))]="Unknown"
 
 ```{r}
 num_unique_groups <- length(unique(global_group_max_attacks$gname))
-terrorist_group <- factor(world_groups_attacks$gname)
+#terrorist_group <- factor(world_groups_attacks$gname)
                              
 g7 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
   ditch_the_axes+
   theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_groups_attacks, aes(label = region, fill = terrorist_group), color ="white") +
+  geom_polygon(data = world_groups_attacks, aes(label = region, fill = factor(world_groups_attacks$gname)), color ="white") +
   scale_fill_manual(values=c(topo.colors(num_unique_groups, alpha = 0.6)))+
   ggtitle("Most active terrorist groups around the globe")
 
+Sys.setlocale(locale="1")
 ggplotly(g7, width = 850, height = 480)
 ```
 

@@ -42,14 +42,13 @@ library(rgeos)
 
 
 ```{r}
-terr = read.csv('~/Documents/CodeWork/Global_Terrorism/globalterrorismdb_0616dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
+terr = read.csv('~/Downloads/globalterrorismdb_0617dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
 ```
 
 ```{r}
 c(ncol(terr),nrow(terr))
 sum(is.na(terr))#/(ncol(data)*nrow(data))
 ```
-
 ```{r}
 terr=rename(terr, id=eventid, year=iyear, nation=country_txt, 
             Region=region_txt, attack=attacktype1_txt,
@@ -80,18 +79,30 @@ global_t <-
   summarize(Total=n())
 
 global_y <- global_t%>%group_by(year)%>%summarize(Total=sum(Total))
-
 global_attacks <- 
   global_t %>%
   group_by(nation) %>%
   summarize(Total=sum(Total)) %>% 
   arrange(desc(Total))
+#%>%filter(Total>300)
+#global_attacks$Total[which(is.na(global_attacks$Total))] = 0
 
 attach(global_attacks)
 global_n <- global_attacks[order(-Total),]
 detach(global_attacks)
 ```
 
+
+```{r}
+global_kills_years <- terr%>%group_by(year)%>%summarize(killed=sum(Killed))
+global_wound_years <- terr%>%group_by(year)%>%summarize(wounded=sum(wounded))
+globe <- 
+  global_kills_years %>% 
+  inner_join(global_wound_years, by="year")
+
+df <- melt(globe, "year")
+df=rename(df, effect=variable)
+```
 
 ```{r}
 world <- map_data("world")
@@ -341,7 +352,7 @@ visualize_count_map(global_int_attacks, "International attacks around the globe"
 ```
 
 
-# Taking a look at the domestic attacks
+#Taking a look at the domestic attacks
 ```{r}
 #get weapon most used in each nation
 global_dom_attacks <- 
@@ -352,6 +363,7 @@ global_dom_attacks <-
 
 visualize_count_map(global_dom_attacks, "Domestic attacks around the globe")
 ```
+
 
 ```{r}
 data_India <- filter(terr, nation == "India")
@@ -491,8 +503,3 @@ g2 <- ggplot(data = USA, aes(x = long, y = lat, group = group)) +
 
 ggplotly(g2, width = 800, height = 480)
 ```
-
-
-
-
-

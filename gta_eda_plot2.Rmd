@@ -39,7 +39,7 @@ library(rgdal)
 library(rgeos)
 ```
 ```{r}
-terr = read.csv('~/Documents/CodeWork/Global_Terrorism/globalterrorismdb_0616dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
+terr = read.csv('~/Downloads/globalterrorismdb_0617dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
 ```
 
 ```{r}
@@ -72,7 +72,20 @@ global_t <-
   group_by(year,nation,Region) %>%
   summarize(Total=n())
 
-global_y <- global_t%>%group_by(year)%>%summarize(Total=sum(Total))
+global_y <- 
+  global_t %>% 
+  group_by(year) %>% 
+  summarize(Total=sum(Total))
+
+global_attacks <- 
+  global_t %>%
+  group_by(nation) %>%
+  summarize(Total=sum(Total)) %>% 
+  arrange(desc(Total))
+
+attach(global_attacks)
+global_n <- global_attacks[order(-Total),]
+detach(global_attacks)
 ```
 
 
@@ -91,10 +104,12 @@ global_kills_years <-
   terr %>%
   group_by(year) %>%
   summarize(killed=sum(Killed))
+
 global_wound_years <- 
   terr %>%
   group_by(year) %>%
   summarize(wounded=sum(wounded))
+
 globe <- 
   global_kills_years %>% 
   inner_join(global_wound_years, by="year")
