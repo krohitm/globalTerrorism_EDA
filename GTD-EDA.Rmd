@@ -1,12 +1,13 @@
 ---
 title: "Global Terrorism"
+#output: rmarkdown::github_document
 output:
   html_document:
     code_folding: hide
     fig_height: 4.5
     fig_width: 7
     highlight: tango
-    keep_md: yes
+    keep_md: true
     number_sections: yes
     theme: cosmo
     toc: yes
@@ -15,7 +16,9 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
-knitr::opts_chunk$set(echo=TRUE, error=FALSE)
+knitr::opts_chunk$set(echo=TRUE, 
+                      error=FALSE,
+                      fig.path = "README_figs/README-")
 ```
 
 ```{r}
@@ -175,38 +178,17 @@ visualize_count_map(global_attacks, "Number of terrorist attacks around the worl
 global_kills <- 
   global %>% 
   group_by(nation) %>% 
-  summarise(Killed = sum(Killed))
-global_kills=rename(global_kills, region=nation)
+  summarise(Total = sum(Killed))
 
-world_kills <- right_join(global_kills, world, by="region")
-world_kills$Killed[which(is.na(world_kills$Killed))]=0
-
-g3 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  ditch_the_axes+
-  theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_kills, aes(label = region, fill = Killed), color ="white") +
-  scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle("Number of people killed around the world")
-
-ggplotly(g3, width = 800, height = 450)
+visualize_count_map(global_kills, "Number of people killed around the world")
 ```
 ```{r}
-global_wound <- global %>% group_by(nation) %>% summarise(wounded = sum(wounded))
-global_wound=rename(global_wound, region=nation)
+global_wound <- 
+  global %>% 
+  group_by(nation) %>% 
+  summarise(Total = sum(wounded))
 
-world_wound <- right_join(global_wound, world, by="region")
-world_wound$wounded[which(is.na(world_wound$wounded))]=0
-
-g3 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  ditch_the_axes+
-  theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_wound, aes(label = region, fill = wounded), color ="white") +
-  scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle("Number of people wounded around the world")
-
-ggplotly(g3, width = 800, height = 450)
+visualize_count_map(global_wound, "Number of people wounded around the world")
 ```
 
 #Let's look at the type of weapons used the most in terrorist attacks across the globe.
@@ -245,6 +227,34 @@ g4 <- ggplot(data = world, aes(x = long, y = lat, group = group)) +
 
 ggplotly(g4, width = 850, height = 480)
 ```
+
+```{r}
+visualize_factor_map <- function(global_table, factor, title) {
+  global_attack_max_type <- 
+    global_attack_max_type %>%
+    rename(region=nation)
+
+  #join the data found with world data
+  world_attack_types <- right_join(global_attack_max_type, world, by="region")
+  world_attack_types$attack[which(is.na(world_attack_types$attack))]="Unknown"
+  num_unique_attacks <- length(unique(global_attack_max_type$attack))
+                             
+  g5 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
+    coord_fixed(1.3) +
+    ditch_the_axes+
+    theme(panel.background = NULL)+
+    geom_polygon(data = world_attack_types, aes(label = region, fill = factor(attack)), color ="white") +
+    scale_fill_manual(values = c(rainbow(num_unique_attacks, 
+                                       s = 0.6, 
+                                       v = 0.8, start = 0, 
+                                       end = max(1, num_unique_attacks - 1)/num_unique_attacks, 
+                                       alpha = 0.7)))+
+  ggtitle("Most particular type of attacks in different countries")
+
+ggplotly(g5, width = 900, height = 480)
+}
+```
+
 
 #Let's look at the most particular type of attacks in different countries.
 ```{r}
@@ -353,8 +363,9 @@ g7 <- ggplot(data = world, aes(x = long, y = lat, group = group)) +
 ggplotly(g7, width = 850, height = 480)
 ```
 
-
+#Taking a look at the international attacks
 ```{r}
+#get weapon most used in each nation
 global_int_attacks <- 
   terr[c('nation', 'INT_ANY')] %>% 
   filter(INT_ANY=='1') %>%
@@ -365,36 +376,6 @@ visualize_count_map(global_int_attacks, "International attacks around the globe"
 ```
 
 
-#Taking a look at the international attacks
-```{r}
-#get weapon most used in each nation
-global_int_attacks <- 
-  terr[c('nation', 'INT_ANY')] %>% 
-  filter(INT_ANY=='1') %>%
-  group_by(nation) %>%
-  summarize(Total=n())
-
-global_int_attacks <- 
-  global_int_attacks %>%
-  rename(region=nation)
-
-#join the data found with world data
-world_int_attacks <- right_join(global_int_attacks, world, by="region")
-world_int_attacks$Total[which(is.na(world_int_attacks$Total))]=0
-```
-
-```{r}
-g8 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  ditch_the_axes+
-  theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_int_attacks, aes(label = region, fill = Total), color ="white") +
-  scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle("International attacks around the globe")
-
-ggplotly(g8, width = 850, height = 480)
-```
-
 #Taking a look at the domestic attacks
 ```{r}
 #get weapon most used in each nation
@@ -404,25 +385,7 @@ global_dom_attacks <-
   group_by(nation) %>%
   summarize(Total=n())
 
-global_dom_attacks <- 
-  global_dom_attacks %>%
-  rename(region=nation)
-
-#join the data found with world data
-world_dom_attacks <- right_join(global_dom_attacks, world, by="region")
-world_dom_attacks$Total[which(is.na(world_dom_attacks$Total))]=0
-```
-
-```{r}
-g9 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  ditch_the_axes+
-  theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_dom_attacks, aes(label = region, fill = Total), color ="white") +
-  scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle("Domestic attacks around the globe")
-
-ggplotly(g9, width = 850, height = 480)
+visualize_count_map(global_dom_attacks, "Domestic attacks around the globe")
 ```
 
 #attacks by highest casualties(killed+wounded)
