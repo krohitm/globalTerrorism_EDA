@@ -2,13 +2,16 @@
 title: "Global Terrorism"
 output:
   html_document:
-    number_sections: TRUE
-    toc: TRUE
-    fig_width: 7
-    fig_height: 4.5
-    theme: cosmo
-    highlight: tango
     code_folding: hide
+    fig_height: 4.5
+    fig_width: 7
+    highlight: tango
+    keep_md: yes
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
 
 ```{r setup, include=FALSE, echo=FALSE}
@@ -128,6 +131,7 @@ global <- rename(terr, long=longitude, lat=latitude)
 ```
 
 ```{r}
+#helper theme for common visualizations
 ditch_the_axes <- theme(
   axis.text = element_blank(),
   axis.line = element_blank(),
@@ -138,27 +142,40 @@ ditch_the_axes <- theme(
   )
 ```
 
-#Let's look at the number of terrorist attacks across the globe.
 ```{r}
-global_attacks = rename(global_attacks, region=nation)
+#helper function to visualize maps for varaibles for counts
+visualize_count_map <- function(global_table, title){
+  global_table <- 
+    global_table %>%
+    rename(region=nation)
 
-world_attacks <- right_join(global_attacks, world, by="region")
-world_attacks$Total[which(is.na(world_attacks$Total))]=0
-
-g3 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
+  #join the data found with world data
+  world_table <- right_join(global_table, world, by="region")
+  world_table$Total[which(is.na(world_table$Total))]=0
+  
+  g <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
   coord_fixed(1.3) +
   ditch_the_axes+
   theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_attacks, aes(label = region, fill = Total), color ="white") +
+  geom_polygon(data = world_table, aes(label = region, fill = Total), color ="white") +
   scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle("Number of terrorist attacks around the world")
+  ggtitle(title)
 
-ggplotly(g3, width = 800, height = 480)
+  ggplotly(g, width = 850, height = 480)
+}
+```
+
+#Let's look at the number of terrorist attacks across the globe.
+```{r}
+visualize_count_map(global_attacks, "Number of terrorist attacks around the world")
 ```
 
 #Let's look at the number of people killed across the global in terrorist atttacks.
 ```{r}
-global_kills <- global %>% group_by(nation) %>% summarise(Killed = sum(Killed))
+global_kills <- 
+  global %>% 
+  group_by(nation) %>% 
+  summarise(Killed = sum(Killed))
 global_kills=rename(global_kills, region=nation)
 
 world_kills <- right_join(global_kills, world, by="region")
@@ -336,28 +353,6 @@ g7 <- ggplot(data = world, aes(x = long, y = lat, group = group)) +
 ggplotly(g7, width = 850, height = 480)
 ```
 
-
-```{r}
-visualize_count_map <- function(global_table, title){
-  global_table <- 
-    global_table %>%
-    rename(region=nation)
-
-  #join the data found with world data
-  world_table <- right_join(global_table, world, by="region")
-  world_table$Total[which(is.na(world_table$Total))]=0
-  
-  g8 <- ggplot(data = world, aes(x = long, y = lat, group = group)) + 
-  coord_fixed(1.3) +
-  ditch_the_axes+
-  theme(legend.position = "none", panel.background = NULL)+
-  geom_polygon(data = world_table, aes(label = region, fill = Total), color ="white") +
-  scale_fill_gradientn(colours=c("#e1eec3","#f05053"))+
-  ggtitle(title)
-
-  ggplotly(g8, width = 850, height = 480)
-}
-```
 
 ```{r}
 global_int_attacks <- 
