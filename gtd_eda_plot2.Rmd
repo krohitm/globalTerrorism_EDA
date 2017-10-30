@@ -37,6 +37,7 @@ library(reshape2)
 library(raster)
 library(rgdal)
 library(rgeos)
+library(ggmosaic)
 ```
 
 ```{r}
@@ -159,7 +160,7 @@ g <- gname_max_cas %>%
   ggplot(mapping=aes(x=reorder(gname, -Total), y=Total, fill=gname)) +
   geom_bar(stat = 'identity')+
   theme(legend.position="none", panel.background = NULL, axis.text.x =  element_text(angle=50, vjust = 1))+
-  labs(x="Terrorist group", y="Number of casulaties", title="Terrorist groups with most casualties")
+  labs(x="Terrorist group", y="Number of casulaties", title="Terrorist groups leading to most casualties")
 ggplotly(g, width = 800, height = 450)
 ```
 
@@ -239,3 +240,100 @@ g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
 ggplotly(g2, height = 500)
 ```
 Casualties related to transporation, military, and Private citizens & property have high variance. Attacks on Police, and non-state militia generally lead to more than 1 casualty, with as many as 11 casualties in some cases.
+
+## Casualties by type of attack
+```{r}
+g1 <- terr %>% 
+  filter(INT_ANY!=-9)%>%
+  ggplot(aes(x = factor(INT_ANY), y = casualties, fill=INT_ANY)) + 
+  geom_boxplot() +
+  theme(legend.position = "none", axis.text.x =  element_text(angle=45))
+
+ylim1 = boxplot.stats(terr$casualties)$stats[c(1,5)]
+g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
+ggplotly(g2, height = 500)
+```
+Domestic attacks usually had higher number of casualties as compared to attacks that were international on any level, i.e. logistics, ideological, or miscellaneous reason.
+
+```{r}
+#getting proportions across attack and region
+t = table(data.frame(terr$attack,terr$Region));
+prop.table(t,2)*100
+```
+
+```{r}
+g <- ggplot(data=terr) +
+  geom_mosaic(aes(fill = attack, x = product(Region)))+
+  labs(x = "Attack type", y = "Proportion")+
+  coord_flip()+
+  theme(legend.position = "none", panel.background = NULL, axis.text.y = element_text(angle=50, vjust=1))
+#g
+ggplotly(g, height = 500)
+```
+
+Middle East & North Africa have higher proportion of bombings/explosions(60%) than any other region, followed by Eastern Europe(54%).
+Central America and Caribbean have a high percentage of armed assaults(42%). 
+
+```{r}
+#getting proportions across attack and region
+t = table(data.frame(terr$attack,terr$target));
+prop.table(t,2)*100
+```
+
+```{r}
+g <- ggplot(data=terr) +
+  geom_mosaic(aes(fill = attack, x = product(target)))+
+  labs(x = "Attack type", y = "Proportion")+
+  coord_flip()+
+  theme(legend.position = "none", panel.background = NULL, axis.text.y = element_blank())#element_text(angle=50, vjust=1))
+#g
+ggplotly(g, height = 500)
+```
+Targets like utilities, transportation, ans business are mostly attacked by bombings or explosions.
+
+```{r}
+#getting proportions across attack and region
+attacks_known_ntnlty <- terr %>%
+  filter(INT_ANY != -9)
+t = table(data.frame(attacks_known_ntnlty$INT_ANY,attacks_known_ntnlty$Region));
+prop.table(t,2)*100
+```
+
+```{r}
+g <- ggplot(data=attacks_known_ntnlty) +
+  geom_mosaic(aes(fill = factor(INT_ANY), x = product(Region)))+
+  labs(x = "Region", y = "Proportion")+
+  coord_flip()+
+  theme(legend.position = "none", panel.background = NULL, axis.text.y = element_blank())#element_text(angle=50, vjust=1))
+#g
+ggplotly(g)
+```
+Western Europe had a fairly high number of international attacks(81%) as compared to domestic attacks, followed by Middle East & North Africa(56%).
+More than 87% of terrorist attacks in Central America & Caribbean Central, South America, and Southeast Asia were domestic.
+
+## Ideology or logistics of attacks in top 10 most attacked countries
+```{r}
+#getting proportions across attack and region
+most_attacked <- global_n %>%
+  top_n(10, Total)
+
+most_attacked_nations <- terr %>%
+  filter(nation %in% most_attacked$nation & INT_ANY!=-9)
+
+t = table(data.frame(most_attacked_nations$INT_ANY,most_attacked_nations$nation));
+prop.table(t,2)*100
+```
+
+```{r}
+g <- ggplot(data=most_attacked_nations) +
+  geom_mosaic(aes(fill = factor(INT_ANY), x = product(nation)))+
+  labs(x = "Region", y = "Proportion")+
+  coord_flip()+
+  theme(legend.position = "none", panel.background = NULL, axis.text.y = element_text(angle=50, vjust=1))
+
+ggplotly(g)
+```
+When looking at the attacks of the top 10 most attacked countries,  we are looking at the attacks whose ideological or logistical nationality we know.
+All of the attacks in UK are international. After that, 81% of attacks in Iraq are logistically or ideologically international.
+More than 96% of the attacks in El Salvador, and more than 90% of the attacks in Columbia, Peru and Phillipines, are domestic.  
+
