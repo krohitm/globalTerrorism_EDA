@@ -378,7 +378,6 @@ India_kills <-
   group_by(provstate) %>% 
   summarise(Killed = sum(Killed))
 India_kills=rename(India_kills, subregion=provstate)
-
 ```
 
 

@@ -38,6 +38,7 @@ library(raster)
 library(rgdal)
 library(rgeos)
 ```
+
 ```{r}
 terr = read.csv('~/Downloads/globalterrorismdb_0617dist.csv', check.names = FALSE, header = TRUE, stringsAsFactors = FALSE)
 ```
@@ -58,6 +59,7 @@ terr$wounded=as.integer(terr$wounded)
 terr$Killed[which(is.na(terr$Killed))] = 0
 terr$wounded[which(is.na(terr$wounded))] = 0
 
+terr$casualties=as.integer(terr$Killed+terr$wounded)
 
 terr$nation[terr$nation=="United States"] <- "USA"
 terr$nation[terr$nation=="United Kingdom"] <- "UK"
@@ -112,7 +114,8 @@ global_wound_years <-
 
 globe <- 
   global_kills_years %>% 
-  inner_join(global_wound_years, by="year")
+  inner_join(global_wound_years, by="year") %>%
+  inner_join(global_y)
 
 df <- melt(globe, "year")
 df=rename(df, effect=variable)
@@ -121,11 +124,12 @@ gky <- df %>%
   ggplot(mapping=aes(x=year,y=value, color=effect))+
   geom_line()+
   theme(panel.background = NULL, axis.text.x = element_text(angle=45, vjust = 1))+
-  labs(x="Year", y="Count", title="Number of people killed/wounded over years")
+  labs(x="Year", y="Count", title="Number of people killed/wounded over years against attacks")
 ggplotly(gky, width = 800, height=450)
 ```
+High peaks can be seen in the people killed in the year 1984. In 2001, even though there was a fall in no. of terrorist attacks, the number of casualties were on a peak. Number of casualties suddenly started rising from 2011 to 2015.
 
-# attacks by highest casualties(killed+wounded)
+## attacks by highest casualties(killed+wounded)
 ```{r}
 #get weapon most used in each nation
 terr$casualties=as.integer(terr$Killed+terr$wounded)
@@ -141,6 +145,22 @@ g_max_cas <- terr%>%
   theme(legend.position="none", panel.background = NULL, axis.text.x =  element_text(angle=50, vjust = 1))+
   labs(x="Target of attack", y="Number of casulaties", title="Terrorist attacks with most casualties")
 ggplotly(g_max_cas)
+```
+
+## Terrorist groups whose attacks have lead to most casualties
+```{r}
+gname_max_cas <- terr[c('gname', 'casualties')]%>%
+  filter(gname!='Unknown') %>%
+  group_by(gname) %>%
+  summarize(Total=n())
+
+g <- gname_max_cas %>%
+  top_n(40, Total) %>%
+  ggplot(mapping=aes(x=reorder(gname, -Total), y=Total, fill=gname)) +
+  geom_bar(stat = 'identity')+
+  theme(legend.position="none", panel.background = NULL, axis.text.x =  element_text(angle=50, vjust = 1))+
+  labs(x="Terrorist group", y="Number of casulaties", title="Terrorist groups with most casualties")
+ggplotly(g, width = 800, height = 450)
 ```
 
 Let's look at the 40 countries with maximum number of terrorist attacks, and 40 countries with least number of terrorist attacks
@@ -163,15 +183,59 @@ g2 <- global_n%>%
 ggplotly(g2, width = 800, height=450)
 ```
 
+# Relationships and inferences
+
+We'll take a look at relationship of some parameters. These relations, however, do not directly imply causation. Further analysis should be done for implying causation.
+
+## Casualties by region
 ```{r}
 g1 <- terr %>% 
-  ggplot(aes(x = weapon, y = wounded, fill=weapon)) + 
+  ggplot(aes(x = Region, y = casualties, fill=Region)) + 
   geom_boxplot() +
-  theme(legend.position = "none",    axis.text.x =  element_text(angle=45))
-ggplotly(g1, height = 500)
-```
+  theme(legend.position = "none", axis.text.x =  element_text(angle=45))
 
+ylim1 = boxplot.stats(terr$casualties)$stats[c(1,5)]
+g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
+ggplotly(g2)
+```
+We can see that Middle East & North Africa has a higher median number of casualties(2) than other regions, which same as that for Sub-Saharan Africa. The least variant region in terms of number of casualties is North America. However, it has lot many outliers, with the 9/11 attacks resulting in most number of casualties(8749).
+
+## Casualties by attack type
 ```{r}
+g1 <- terr %>% 
+  ggplot(aes(x = attack, y = casualties, fill=attack)) + 
+  geom_boxplot() +
+  theme(legend.position = "none", axis.text.x =  element_text(angle=45))
 
+ylim1 = boxplot.stats(terr$casualties)$stats[c(1,5)]
+g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
+ggplotly(g2, height = 500)
+```
+Leaving out the unknown attack types, no. of casualties are most highly variant in case of bombings/explosions. Hijacking and Hostage Taking(s) have low variance in no. of casualties, with outliers as high as 8749 in case of hijacking. 
+
+## Casualties by weapon
+```{r}
+g1 <- terr %>% 
+  ggplot(aes(x = weapon, y = casualties, fill=weapon)) + 
+  geom_boxplot() +
+  theme(legend.position = "none", axis.text.x =  element_text(angle=45))
+
+ylim1 = boxplot.stats(terr$casualties)$stats[c(1,5)]
+g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
+ggplotly(g2, height = 500)
 ```
 
+The no. of casualties because of chemical weapons has been highly variant, with 25% of chemical attacks resultin casualties between 50 to 5513. There hasn't been any casualty because of radilogical weapons. 
+
+## Casualties by target
+```{r}
+g1 <- terr %>% 
+  ggplot(aes(x = target, y = casualties, fill=target)) + 
+  geom_boxplot() +
+  theme(legend.position = "none", axis.text.x =  element_text(angle=45))
+
+ylim1 = boxplot.stats(terr$casualties)$stats[c(1,5)]
+g2 <- g1+coord_cartesian(ylim = ylim1*1.05)
+ggplotly(g2, height = 500)
+```
+Casualties related to transporation, military, and Private citizens & property have high variance. Attacks on Police, and non-state militia generally lead to more than 1 casualty, with as many as 11 casualties in some cases.
